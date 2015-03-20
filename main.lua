@@ -1,7 +1,7 @@
 
 cc.FileUtils:getInstance():addSearchPath("src")
 cc.FileUtils:getInstance():addSearchPath("res")
-cc.FileUtils:getInstance():addSearchPath("res/ui2")
+cc.FileUtils:getInstance():addSearchPath("res/ui")
 
 -- cclog
 cclog = function(...)
@@ -26,10 +26,7 @@ local function main()
     collectgarbage("setpause", 100)
     collectgarbage("setstepmul", 5000)
 
-    local test = {"dfd"}
-    local t = {[1] = test}
 
-    --[[]]
     -- initialize director
     local director = cc.Director:getInstance()
     local glview = director:getOpenGLView()
@@ -42,6 +39,8 @@ local function main()
     director:setDisplayStats(config.fps)
     director:setAnimationInterval(1.0 / config.interval)
 
+    require("displayConfig")
+
     if config.scaleByFactor then
         glview:setDesignResolutionSize(config.width,config.height, config.policy)
 
@@ -50,7 +49,6 @@ local function main()
             display:setFactor(config.width,config.height)
         end
     else
-        require("displayConfig")
         require("uber.display.autoscale")
     end
 
@@ -72,23 +70,7 @@ local function main()
         display.addShader(v)
     end
 
-    --[[
-    require("quick.init")
-    require("utils.NotifyCenter")
-    StorageMgr = require("utils.StorageMgr"):getInstance()
-    StorageMgr:Load()
-    local coin = StorageMgr:getHeroDataProxy():getCoin()
-    cclog("--------coins:"..coin)
-    --StorageMgr:getHeroDataProxy():setCoin(2840)
-    local herodataproxy = require("utils.manager.HeroDataProxy"):getInstance()
-    assert(herodataproxy:getCoin() == coin)
-    cclog("--------coins:"..herodataproxy:getCoin())
-    coin = StorageMgr:getHeroDataProxy():getCoin()
-    cclog("--------after modify,coins:"..coin)
 
-    cclog("----test motion dispatch event")
-    local motionMgr = require("utils.manager.MotionMgr"):getInstance()
-    motionMgr:killMonster()]]
     require("utils.NotifyCenter")
     StorageMgr = require("utils.StorageMgr"):getInstance()
 

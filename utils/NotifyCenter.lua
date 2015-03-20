@@ -1,11 +1,5 @@
 NotifyCenter = NotifyCenter or {}
 
-Events = {
-	MONEY_EVENT = "MONEY_EVENT",
-	KILL_MONSTER = "KILL_MONSTER",
-    PLAYER_DEAD_EVENT = "PLAYER_DEAD_EVENT",
-}
-
 NotifyCenter.listeners_ = {}
 NotifyCenter.nextListenerHandleIndex_ = 0
 

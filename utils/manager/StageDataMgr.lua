@@ -7,6 +7,9 @@ local __allowInstance = nil
 
 --表现：普通关卡要知道总共有多少个Stage，每个stage有多少个章节 --(交给model)
 
+--存储：stageId,
+--		chapterId,star
+
 local HexData = require("utils.HexData")
 
 function StageDataMgr:ctor()
@@ -14,6 +17,8 @@ function StageDataMgr:ctor()
     if not __allowInstance then
 		error("StageDataMgr is a singleton")
 	end
+
+	self:Reset()
 end
 
 function StageDataMgr:getInstance( )
@@ -35,15 +40,10 @@ function StageDataMgr:getMgr()
 	return self._mgr
 end
 
-function StageDataMgr:Load(jsonValue)
-	cclog("----------StageDataMgr:Load")
-	local passStages = HexData.new((jsonValue["passStages"]) or "")
-	self._passStages = string.split(passStages,",")
-	local passChapters = HexData.new((jsonValue["passChapters"]) or "")
-	self._passChapters = string.split(passChapters,",")
-	--self._passStages = HexData.new((jsonValue["passStages"]) or "")
-	--self._passChapters = HexData.new(jsonValue["passChapters"] or "")
-
+function StageDataMgr:Reset()
+	self._passStages = {}
+	self._passChapters = {}
+	self._chapterInfo = {}
 end
 
 function StageDataMgr:Save()
@@ -51,20 +51,140 @@ function StageDataMgr:Save()
 	self._mgr:Save()
 end
 
-function StageDataMgr:addPassChapter(chapterId)
+function StageDataMgr:Load(jsonValue)
+	cclog("----------StageDataMgr:Load")
+	local temp = string.split(jsonValue["passStages"],",")
+	self._passStages = {}
+	self._passChapters = {}
+	self._chapterInfo = {}
+
+	for i = 1,#temp do
+    	local n = tonumber(temp[i])
+    	if n and n > 0 then
+    		self._passStages[#self._passStages + 1] = n
+    	end
+    end
+
+    temp = string.split(jsonValue["passChapters"],",")
+	for i = 1,#temp do
+    	local n = tonumber(temp[i])
+    	if n and n > 0 then
+    		self._passChapters[#self._passChapters + 1] = n
+    	end
+    end
+	--self._passStages = HexData.new((jsonValue["passStages"]) or "")
+	--self._passChapters = HexData.new(jsonValue["passChapters"] or "")
+
+	temp = jsonValue["chapterInfo"] or {}
+	for k,v in pairs(temp) do
+		self._chapterInfo[k] = v
+	end
+end
+
+function StageDataMgr:GetData(data)
+	local ret = {}
+
+	local temp = ""
+	for i = 1,#self._passStages do
+		if i ~= #self._passStages then
+			temp = temp .. tostring(self._passStages[i]) .. ","
+		else
+			temp = temp .. tostring(self._passStages[i])
+		end
+	end
+	ret["passStages"] = temp
+
+	temp = ""
+	for i = 1,#self._passChapters do
+		if i ~= #self._passChapters then
+			temp = temp .. tostring(self._passChapters[i]) .. ","
+		else
+			temp = temp .. tostring(self._passChapters[i])
+		end
+	end
+	ret["passChapters"] = temp
+
+	--[[
+	temp = ""
+	for i = 1,#self._chapterInfo do
+		if i ~= #self._chapterInfo then
+			temp = temp .. tostring(self._chapterInfo[i]) .. ","
+		else
+			temp = temp .. tostring(self._passChapters[i])
+		end
+	end]]
+	ret["chapterInfo"] = self._chapterInfo
+
+	return ret
+end
+
+function StageDataMgr:addPassChapter(chapterId,star)
 	if table.keyof(self._passChapters,chapterId) then
 		return false
 	end
+	star = star or 3
 
 	self._passChapters[#self._passChapters + 1] = chapterId
+	self:addChapterInfo(chapterId,star)
+    
 end
 
-function StageDataMgr:AddAllowable(stageId)
+function StageDataMgr:getPassChapters()
+	return self._passChapters
+end
+
+function StageDataMgr:getAllowableStages()
+	return self._passStages
+end
+
+function StageDataMgr:addAllowableStage(stageId)
 	if table.keyof(self._passStages,stageId) then
 		return false
 	end
 
 	self._passStages[#self._passStages + 1] = stageId
+end
+
+function StageDataMgr:addChapterInfo(chapterId,star)
+	self._chapterInfo[chapterId] = star
+
+	--[[
+	local stageId = gChapterChain[chapterId].stage
+	local stageStar = self:getStageStar(gChapterChain[chapterId].stage)
+	for unlockChapterId,info in pairs(gChapterChain) do
+		if info.reqStageId == stageId and stageStar >= info.reqStageStar then
+			local stage = gChapterChain[chapterId].stage
+			self:addAllowableStage(stage)
+		end
+	end]]
+end
+
+function StageDataMgr:getChapterInfo(chapterId)
+	return self._chapterInfo[chapterId]
+end
+
+function StageDataMgr:getStageStar(stageId)
+    local ret = 0
+
+    local function getChaptersByStageId(stageId)
+	    local chapterList = {}
+	    for k,entry in pairs(sChapterStore) do
+	        if entry.stage_index == stageId then
+	            chapterList[#chapterList + 1] = entry.id
+	        end
+	    end
+	    
+	    return chapterList
+	end
+
+    local chapters = self:getChaptersByStageId(stageId)
+    for k,chapterId in pairs(chapters) do
+        if self._passChapters[chapterId] then
+            ret = ret + self._chapterInfo[chapterId]
+        end
+    end
+
+    return ret
 end
 
 

@@ -96,6 +96,15 @@ function UIMgr:EnterScene(state)
 	end
 end
 
+function UIMgr:getMainLayer()
+	if self.state == GameState.MAIN then
+		local scene = sharedDirector:getRunningScene()
+		local layer = scene:getChildByTag(10086)
+		assert(layer)
+		return layer
+	end
+end
+
 function UIMgr:ShowInfo( context )
 	local layer = sharedDirector:getRunningScene():getChildByTag(10086)
 	if layer then

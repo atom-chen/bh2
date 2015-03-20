@@ -89,7 +89,7 @@ function  CameraMgr:endmove()
 end
 
 function  CameraMgr:_startmove(vmin, vmax,upa,downa,dir)
-	if self._state == CameraState.normal then
+	--if self._state == CameraState.normal then
 		self._state = CameraState.reaction
 
 		self.vmin = vmin
@@ -98,7 +98,7 @@ function  CameraMgr:_startmove(vmin, vmax,upa,downa,dir)
 		self.upa = upa
 		self.downa = downa
 		--cclog("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!dir:"..self.dir)
-	end
+	--end
 end
 
 function  CameraMgr:_endmove()
@@ -179,7 +179,7 @@ function CameraMgr:_upmove(dt)
 	s = s * self.dir
 
 	self._map._uiLayer:addLabel3("upmove::s:"..s.." state:"..self._state)
-
+	
 	self._map:CameraMove(s)
 end
 

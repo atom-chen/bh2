@@ -3,8 +3,9 @@ local Creature = class("Creature",Unit)
 Creature.__index = Creature
 
 
-function Creature:ctor(info)
-	Unit.ctor(self,info,MonsterType)
+function Creature:ctor(guid,info)
+	Unit.ctor(self,guid,info,MonsterType)
+	self._loot = false
 end
 
 function Creature:addToWorld(map,pos,face,ai)
@@ -28,6 +29,16 @@ function Creature:UpdateHpBar( per )
 	if per > 0 then
 		self._hpbar:pos(cc.p( 0,self._actor._armature:pos().y + self._actor._armature:getBoundingBox().height + 15))
 		self._hpbar:changeValue(1,per)
+	end
+end
+
+function Creature:onDead()
+	Unit.onDead(self)
+	-- 掉落物品到场景上
+	-- self._info.lootId
+	if not self._loot then
+		ItemLootMgr:LootInMap(1,self)
+		self._loot = true
 	end
 end
 

@@ -1,10 +1,12 @@
 faceleft = faceleft or -1
 faceright = faceright or 1
 
-PlayerType = 1
-MonsterType = 2
-ObjectType = 3
-ItemType = 4
+PlayerType = 1 		-- 玩家
+MonsterType = 2  	-- 怪物
+ObjectType = 3 		-- 场景物件
+MissileType = 4 	-- 飞行道具
+TrapType = 5 		-- 陷阱类
+ItemType = 6 		-- 道具
 
 ObjectManager = ObjectManager or {}
 

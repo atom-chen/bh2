@@ -34,7 +34,7 @@ function testAI:updateAI(dt)
 				math.abs( self._ctrl:pos().y - pl:pos().y ) <= 30) then
 			 self._ctrl:attack()
 			 self._ctrl:attack()
-			 self._ctrl:attack()
+			 --self._ctrl:attack()
 			 attack = true
 		end
 

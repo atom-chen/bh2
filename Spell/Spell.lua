@@ -62,9 +62,9 @@ function Spell:prepare()
 	if anim and anim ~= "" then
 		self._caster:ActorPlay(anim,loop)
 	end
-	uber.TimingBegin()
+--	uber.TimingBegin()
 	self:createDisplay()
-	uber.TimingEnd("createDisplay")
+--	uber.TimingEnd("createDisplay")
 end
 
 function Spell:cancel()

@@ -89,3 +89,13 @@ function ControlManager:addObject(object)
 		self._ctrl:addObject(object)
 	end
 end
+
+function ControlManager:removeObject(guid)
+	if self._ctrl then
+		self._ctrl:removeObject(guid)
+	end
+end
+
+function ControlManager:getController()
+	return self._ctrl:getController()
+end

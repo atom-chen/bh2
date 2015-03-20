@@ -68,7 +68,8 @@ end
 
 function GameMap:LoadCSUI()
  	self._uiLayer = require("ui.MapUI").new()
- 	self:addChild(self._uiLayer)
+ 	CC_SAFE_RETAIN(self._uiLayer)
+ 	--self:addChild(self._uiLayer)
 end
 
 function GameMap:GetMapUI()

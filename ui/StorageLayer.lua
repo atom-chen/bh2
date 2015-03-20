@@ -1,22 +1,7 @@
---[[
-local StorageLayer = class("StorageLayer",
-	function()
-		--local layer = ccui.loadWidget("ui/Index")
-		local layer = cc.CSLoader:createNode("ui/res/MainScene.csb")
-		local action = cc.CSLoader:createTimeline("ui/res/MainScene.csb")
-		action:gotoFrameAndPlay(0,false)
-		layer:runAction(action)
-		--layer:setNodeEventEnabled(true)
-		--layer:setContentSize(cc.size(config.width,config.height))
-		--ccui.Helper:doLayout(layer)
-		return layer
-	end
-)]]
-
 local ViewBase = require("ui.ViewBase")
 local StorageLayer = class("StorageLayer", ViewBase)
 
-StorageLayer.RESOURCE_FILENAME = "ui2/Storage.csb"
+StorageLayer.RESOURCE_FILENAME = "ui/Storage.csb"
 StorageLayer.RESOURCE_BINDING = { btn_ksy = {events = {[1] = {event = "touch",method = "beginGame" }} }}
 StorageLayer.AUTOSCALE = true
 
@@ -25,33 +10,6 @@ StorageMgr = require("utils.StorageMgr"):getInstance()
 function StorageLayer:onCreate()
 	self:addNodesEventListener()
 end
-
---[[
-local StorageLayer = class("StorageLayer",
-	function()
-		local layer = ccui.loadWidget("ui2/MainView_1.csb")
-		return layer
-end)
-
-function StorageLayer:ctor()
-	self:AutoScale()
-	self:addNodesEventListener()
-end]]
---[[
-function StorageLayer:AutoScale()
-	cclog("--------StorageLayer:AutoScale()")
-	local node = self:getChildren()[1]:getChild("Panel")
-	cclog("node:getChildrenCount():"..node:getChildrenCount())
-    for i = 1,node:getChildrenCount() do
-        local child = node:getChildren()[i]
-        if child:getName() ~= "Image_bg" then
-        	child:pos(display.uiP(child:pos()))
-        else
-        	display:AutoScale(child)
-        end
-    end
-    
-end]]
 
 function StorageLayer:addNodesEventListener()
 	local node = self:getChildren()[1]
@@ -76,7 +34,7 @@ function StorageLayer:beginGame(node)
 
 	self:UpdateStorageView()
     
-	local action = cc.CSLoader:createTimeline("ui2/Storage.csb")
+	local action = cc.CSLoader:createTimeline("ui/Storage.csb")
     action:gotoFrameAndPlay(0,false)
     self:runAction(action)
 end
@@ -114,11 +72,16 @@ end
 function StorageLayer:chooseStorage(node)
 	if not node:isVisible() then return end
 	cclog("进入存档"..node:getTag())
-	UIMgr:EnterScene(GameState.MAIN)
+	
 
 	local storageIndex = node:getTag()
 	
-    StorageMgr:Load(storageIndex)
+    if StorageMgr:Load(storageIndex) then
+    	cclog("进入主界面")
+    	UIMgr:EnterScene(GameState.MAIN)
+    else
+    	assert(false)
+    end
 end
 
 function StorageLayer:deleteStorage(node)

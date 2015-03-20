@@ -1,5 +1,6 @@
 require "cocos.init"
 require "uber.init"
+require("Data.csv.CSVInit")
 require "utils.init"
 stack = require("Common.stack")
 vector = require("Common.vector")
@@ -15,6 +16,6 @@ if config.editor then
 	require "Editor.init"
 end
 
-require("Data.csv.CSVInit")
+
 --require("Data.config.configStruture")
 --require("Data.config.configTable")

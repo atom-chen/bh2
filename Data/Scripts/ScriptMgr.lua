@@ -183,5 +183,11 @@ function ScriptMgr:Timer_Reset(key)
 	end
 end
 
+-- 场景物体脚本调用
+-- 添加陷阱
+function ScriptMgr:AddTrap(effect)
+	self._gameLogic:addTrap(nil,effect)
+end
+
 return ScriptMgr
 

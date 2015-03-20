@@ -1,10 +1,16 @@
 SpellManager = require("Spell.SpellManager").new()
 local ScriptMgr = require 'Data.Scripts.ScriptMgr'.new()
 SpellManager:load()
+require 'Object.ObjectManager'
+
 local Unit = require 'Object.Unit'
 local Creature = require 'Object.Creature'
 local Player = require 'Object.Player'
-require 'Object.ObjectManager'
+local Missile = require 'Object.Missile'
+local Trap = require 'Object.Trap'
+local ItemObject = require 'Object.ItemObject'
+
+local GuidMaker = require 'Logic.GuidMaker'
 
 DamageType = 
 {
@@ -58,15 +64,33 @@ function AddPlayer(id,x,y,face,ai)
 	return player,idx
 end
 
+function AddMissile(effect,caster,ai)
+	local missile,idx = GameLogic:addMissile(effect,caster,ai)
+	return missile,idx
+end
+
+function AddTrap(caster,effect)
+	local trap,idx = GameLogic:addTrap(caster,effect)
+	return trap,idx
+end
+
 function GameLogic:init(stage,chapter,section) --id:section id
 	
 	self._events = {}
 	self._players = {}
 	self._monsters = {}
-	self._items = {}
-	self._objects = {}		-- 可破坏的场景物体,陷阱什么的
-	self._spells = {}
-	self._finishSpells = {}
+	self._items = {}		-- 掉在地上的道具
+	self._missiles = {}		-- 飞在场景内的导弹
+	self._traps = {}		-- 场景内的陷阱
+	self._objects = {}		-- 可破坏的场景物件
+
+	self._playerGM = GuidMaker.new()
+	self._monstersGM = GuidMaker.new()
+	self._itemsGM = GuidMaker.new()
+	self._missilesGM = GuidMaker.new()
+	self._trapsGM = GuidMaker.new()
+	self._objectsGM = GuidMaker.new()
+
 	-- 设置脚本管理器
 	ScriptMgr:setGameLogic(self)
 
@@ -75,7 +99,8 @@ function GameLogic:init(stage,chapter,section) --id:section id
 	local scheduler = sharedDirector:getScheduler()
 	self._schedulerId = scheduler:scheduleScriptFunc(handler(self,self.update),0,false)
 
-	
+	--设置掉落管理器
+	ItemLootMgr:setGameLogic(self)
 end
 
 function GameLogic:InitMap( stage,chapter,section  )
@@ -128,7 +153,7 @@ function GameLogic:InitMap( stage,chapter,section  )
 	--self:unlockPart(10103)
 	--self:unlockPart(10104)
 	
-	ControlManager:setType(ControlType.base)
+	--ControlManager:setType(ControlType.base)
 	ControlManager:setType(ControlType.keyboard)
 
 	--local id = self:addPlayer(1,100,100,faceleft)
@@ -221,13 +246,14 @@ end
 
 function GameLogic:addPlayer(id,x,y,face,ai)
 	local info = ObjectManager:getInfo(id)
-	local player = Player.new(info)
+	local guid = self._playerGM:AutoGet()
+	local player = Player.new(guid,info)
 	-- 更新视野
 	self:updateVisableFor(player)
-	self._players[#self._players+1] = player
+	self._players[guid] = player
 	player:addToWorld(self._map,cc.p(x,y),face,ai)
 	ControlManager:addPlayer(player)
-	return #self._players
+	return guid
 end
 
 function GameLogic:setMapLock(block)
@@ -242,33 +268,76 @@ function GameLogic:getPlayerCount()
 	return #self._players
 end
 
-function GameLogic:addObject(object)
-	self._objects[#self._objects+1] = object
-	self._map:addSceneObject(object)
-	ControlManager:addObject(object)
-	return #self._objects
+function GameLogic:addMissile(effect,caster,ai)
+	local spell = effect._spell
+	local displayId = spell.displayID
+	local displayEntry = sSpellDisplayStore[displayId]
+	local guid = self._missilesGM:AutoGet()
+	local missile = Missile.new(displayEntry.misc,effect._info.value_base,caster)
+	self:updateVisableFor(missile)
+	self._missiles[guid] = missile
+	local pos = caster:pos()
+	local face = caster:getFace()
+	missile:addToWorld(self._map,pos,face,ai)
+	ControlManager:addObject(missile)
+	return missile,guid
 end
 
-function GameLogic:getObject(idx)
-	return self._objects[idx]
+function GameLogic:addTrap(caster,effect)
+	local guid = self._trapsGM:AutoGet()
+	local trap = Trap.new(guid,4,effect,caster)
+	self:updateVisableFor(trap)
+	self._traps[guid] = trap
+	local pos = cc.p(200,200)
+	local face = faceright
+	if caster then
+		pos = caster:pos()
+		face = caster:getFace()
+	end
+	trap:addToWorld(self._map,pos,face,nil)
+	ControlManager:addObject(trap)
+	return tarp,guid
 end
 
-function GameLogic:getObjectCount()
-	return #self._objects
+function GameLogic:addItem(id,caster)
+	local guid = self._itemsGM:AutoGet()
+	--local entry = sItemStore[id]
+	--local display = sSpineStore[entry.display]
+	local item = ItemObject.new(guid,id)
+	self._items[guid] = item
+	local pos = caster:pos()
+	local face = caster:getFace()
+	item:addToWorld(self._map,pos,face,nil)
+	ControlManager:addObject(item)
+	return item,guid
+end
+
+function GameLogic:removeItem(guid)
+	local item = self._items[guid]
+	if item then
+		item:removeFromWorld()
+		ControlManager:removeObject(item)
+	end
+	self._items[guid] = nil
+end
+
+function GameLogic:getObject(guid)
+	return self._objects[guid]
 end
 
 function GameLogic:addMonster(id,x,y,face,ai)
+	local guid = self._monstersGM:AutoGet()
 	local info = ObjectManager:getInfo(id)
 	local monster = Creature.new(info)
 	self:updateVisableFor(monster)
-	self._monsters[#self._monsters+1] = monster
+	self._monsters[guid] = monster
 	monster:addToWorld(self._map,cc.p(x,y),face,ai)
 	ControlManager:addObject(monster)
-	return #self._monsters
+	return guid
 end
 
-function GameLogic:getMonster(idx)
-	return self._monsters[idx]
+function GameLogic:getMonster(guid)
+	return self._monsters[guid]
 end
 
 function GameLogic:addEvent(evt)
@@ -285,6 +354,9 @@ function GameLogic:update(dt)
 	end
 	self:updateUnits(self._players,dt)
 	self:updateUnits(self._monsters,dt)
+	self:updateUnits(self._missiles,dt)
+	self:updateUnits(self._traps,dt)
+	self:updateItems(dt)
 end
 
 function GameLogic:updateUnits(units,dt)
@@ -303,6 +375,26 @@ function GameLogic:updateUnits(units,dt)
 	--for _,guid in pairs(removeList) do
 	--	units[guid] = nil
 	--end
+end
+
+function GameLogic:updateItems(dt)
+	local ctrl = ControlManager:getController()
+	if not ctrl then return end
+	local pt = ctrl:pos()
+	local pickUp_items = {}
+	for guid,item in pairs(self._items) do
+		if item:isInWorld() then
+			item:update(dt)
+			local rect = item:getBox()
+			if cc.rectContainsPoint(rect,pt) then
+				pickUp_items[#pickUp_items+1] = guid
+			end
+		end
+	end
+
+	for _,guid in pairs(pickUp_items) do
+		self:removeItem(guid)
+	end
 end
 
 function GameLogic:updateEvents(dt)
@@ -359,6 +451,11 @@ function GameLogic:updateVisableFor(pl)
 	for k,monster in pairs(self._monsters) do
 		monster:updateVisableFor(pl)
 		pl:updateVisableFor(monster)
+	end
+
+	for k,object in pairs(self._objects) do
+		object:updateVisableFor(pl)
+		--pl:updateVisableFor(object)
 	end 
 end
 
@@ -418,7 +515,7 @@ end
 -- 每个脚本中必须指定怪物的GUID,并且不可重复
 function GameLogic:sCreateCreature(guid,entry)
 	local info = ObjectManager:getInfo(entry)
-	local monster = Creature.new(info)
+	local monster = Creature.new(guid,info)
 	self._monsters[guid] = monster
 end
 

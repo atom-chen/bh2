@@ -4,7 +4,7 @@ local MainModel = class("MainModel")
 MainModel.__index = MainModel
 
 function MainModel:ctor()
-	self._heroData = require("utils.StorageMgr"):getInstance():getHeroDataProxy()
+	self._heroData = require("utils.StorageMgr"):getInstance():getTeamDataMgr()
 end
 
 function MainModel:comsumeDiamodToAddCoin()
@@ -26,6 +26,7 @@ end
 
 function MainModel:backToStorage( ... )
 	StorageMgr:Save()
+	StorageMgr:Reset()
 end
 
 return MainModel

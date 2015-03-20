@@ -1,6 +1,5 @@
 local ValueStrip = class("ValueStrip",function ()
-	cclog("创建血条。。。")
-	return cc.Sprite:create()--ccui.image({image = ""})
+	return ccui.image({image = ""})
 end)
 ValueStrip.__index = ValueStrip
 

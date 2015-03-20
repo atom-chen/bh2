@@ -83,6 +83,7 @@ function ChapterScript:eventSpawn_Part1()
 	if event_part1_wave1 == 0 then 
 		self:script():Creature_Add(SC.c1,500,50,faceleft,"testAI")					--zero修改了坐标
 		self:script():Creature_Add(SC.c2,550,200,faceleft,"testAI")					--zero修改了坐标
+		self:script():AddTrap(sSpellEffects[8])
 		event_part1_wave1 = 1 
 	end
 

@@ -17,12 +17,11 @@ end
 local function getBoolean( value )
 	value = tonumber(value)
 	assert(value == 0 or value == 1,"布尔型值只允许配1或0")
+	local ret = false
 	if value == 0 then
-		value = false
-	else
-		value = true
+		ret = true
 	end
-	return value
+	return false
 end
 
 local CSVformat =
@@ -40,14 +39,11 @@ local function load( entry )
 		local info = t[i]
 		if newT[info.id] then assert(false,"ERROR:" .. entry.filename .."表中存在重复的Id:"..info.id) end
 		assert(table.nums(info) == string.len(entry.fmt),entry.filename.."字段数不统一")
-		--local idx = 1
+		local idx = 1
 		for k,value in pairs(info) do
-			--local fmt = string.sub(entry.fmt,idx,idx)
-			--CSVformat[fmt].handler(value)
-			--idx = idx + 1
-			if value == "" then
-				value = 0
-			end
+			local fmt = string.sub(entry.fmt,idx,idx)
+			CSVformat[fmt].handler(value)
+			idx = idx + 1
 		end
 		newT[info.id] = info
 	end

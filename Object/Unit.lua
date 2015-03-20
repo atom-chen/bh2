@@ -53,13 +53,12 @@ local anim =
 local Unit = class("Unit",GObject)
 Unit.__index = Unit
 
-function Unit:ctor(info,type)
+function Unit:ctor(guid,info,type)
+	self._guid = guid
 	self:init()
-	self._info = info
-	self:createActor()
+	self:createActor(info)
 	self._state = state.stand
 	self._to = state.stand
-	self._schedule = nil
 	self:speed(display.p(sMiscValueInfo[miscValue.playerMoveX].value,sMiscValueInfo[miscValue.playerMoveY].value))
 	self:stand()
 	self._locked = false
@@ -132,9 +131,12 @@ function Unit:ctor(info,type)
 	self._t = 0
 end
 
-function Unit:createActor()
-	self._actor = GameActor.new(self._info.json,self._info.atlas)
---	self._actor:loadEffect(self._info.effectJson,self._info.effectAtlas)
+function Unit:getGuid()
+	return self._guid
+end
+
+function Unit:createActor(info)
+	self._actor = GameActor.new(info.json,info.atlas)
 	CC_SAFE_RETAIN(self._actor)
 end
 
@@ -145,12 +147,15 @@ function Unit:addToWorld(map,pos,face,ai)
 	self:setDir(cc.p(face,0))
 	self._face=face
 	self._map:addSceneObject(self)
-	--self._schedule = sharedDirector:getScheduler():scheduleScriptFunc(handler(self,self._update),0,false)
 	self._addToWorld = true
 end
 
 function Unit:isInWorld()
 	return self._addToWorld
+end
+
+function Unit:isPlayer()
+	return self._type == PlayerType
 end
 
 function Unit:removeFromWorld()
@@ -183,11 +188,6 @@ function Unit:ActorPlay(action,loop,scale)
 		end,sp.EventType.ANIMATION_END)
 end
 
-function Unit:Exit( )	
-	local scheduler = sharedDirector:getScheduler()
-	scheduler:unscheduleScriptEntry(self._schedule)
-end
-
 function Unit:getMotionMgr()
 	return self._MotionMgr
 end
@@ -207,7 +207,7 @@ function Unit:setMap( map )
 	self._map = map
 	self._boundDirty = true
 
-	self._map:GetMapUI():updateHp(self:getHp(),self:getMaxHp())
+	--self._map:GetMapUI():updateHp(self:getHp(),self:getMaxHp())
 end
 
 function Unit:setAI(ai)
@@ -274,13 +274,6 @@ end
 
 function Unit:setScreenPos(pos)
 	self._actor:pos(self:pos(pos))
-end
-
-function Unit:getScreenPos()
-	local pos ={}
-	pos.x = self._actor:pos().x - self._map:getFloorPos().x
-	pos.y = self._actor:pos().y - self._map:getFloorPos().y
-	return pos
 end
 
 function Unit:onChangeDirFunc(dir)
@@ -557,6 +550,7 @@ function Unit:updateVisableFor(pl)
 	-- 如果是敌对的
 	if self:isHostileTo(pl) then
 		self:getThreatMgr():add(pl)
+		-- AuraHolder
 	end
 	-- 触发AI脚本
 	if self._ai then
@@ -895,8 +889,8 @@ function Unit:updateSpell(dt)
 	self._SpellMgr:update(dt)
 end
 
-function Unit:addAura(effect)
-	self._AuraMgr:addAura(self,effect)
+function Unit:addAura(effect,displayId)
+	self._AuraMgr:addAura(self,effect,displayId)
 end
 
 function Unit:updateAura(dt)
@@ -1019,7 +1013,7 @@ function Unit:onHit(log)
 	local absorb = 0
 	log.absorb = 0
 
-	if valueMod == 0 then
+	if valueMod == 0 then			-- 改变hp
 		for k,aura in pairs(Auras) do
 			absorb,damage = aura:Absorb(damage)
 			log.absorb = absorb + log.absorb
@@ -1027,7 +1021,7 @@ function Unit:onHit(log)
 		if damage > 0 then
 			self:modifyHp(-damage*(1+damage_pct))
 		end
-	elseif valueMod == 1 then
+	elseif valueMod == 1 then		-- 改变mp
 		self:modifyMp(-damage)
 	end
 	log.damage = damage

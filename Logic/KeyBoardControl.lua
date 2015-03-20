@@ -134,10 +134,6 @@ function KeyBoardControl:onMoveLeft()
 
 	self._dir = cc.p(-0.9,0)
 	self._canCastSpell3 = false
-
-	-- 设置摄像机状态
-	local player = self._controller
-	player._map:getCameraMgr():startmove(-1)
 end
 
 function KeyBoardControl:onMoveDown()
@@ -164,11 +160,6 @@ function KeyBoardControl:onMoveRight()
 
 	self._dir = cc.p(0.9,0)
 	self._canCastSpell3 = false
-
-	-- 设置摄像机状态
-	local player = self._controller
-	player._map:getCameraMgr():startmove(1)
-
 end
 
 function KeyBoardControl:onReleaseUp()
@@ -199,10 +190,6 @@ function KeyBoardControl:onReleaseLeft()
 	self:StickPos()
 
 	self._dir = cc.p(0,0)
-
-		-- 设置摄像机状态
-	local player = self._controller
-	player._map:getCameraMgr():endmove()
 end
 
 function KeyBoardControl:onReleaseDown()
@@ -233,10 +220,6 @@ function KeyBoardControl:onReleaseRight()
 	self:StickPos()
 
 	self._dir = cc.p(0,0)
-
-		-- 设置摄像机状态
-	local player = self._controller
-	player._map:getCameraMgr():endmove()
 end
 
 function KeyBoardControl:StickPos()
@@ -251,12 +234,20 @@ end
 
 function KeyBoardControl:MoveToDir(dir)
 	--cclog("set Dir x:%.2f y:%.2f",dir.x,dir.y)
+	local player = self._controller
 	if self._keyState == 0 then
 		self._ctrlType = nil
 		self._controller:stand()
+		-- 设置摄像机状态
+		player._map:getCameraMgr():endmove()
+		--cclog("Camera endmove")
 	else
 		self._controller:setDir(dir)
 		self._controller:move()
+		-- 设置摄像机状态
+		local player = self._controller
+		player._map:getCameraMgr():startmove(dir.x)
+		--cclog("Camera starMove "..dir.x)
 	end
 end
 
@@ -281,10 +272,26 @@ end
 
 function KeyBoardControl:ClickOn(pt)
 	--if cc.rectContainsPoint(self.touchRect,pt) == false then return end
-	if circleContainsPoint(self._touchCircleRadius,pt,self._touchCircleCenter) == false then 
-		return 
-	end
-	self:moveStick(pt)
+	
+	--if circleContainsPoint(self._touchCircleRadius,pt,self._touchCircleCenter) == false then 
+		local item = nil
+		local mapPos = cc.pAdd( pt, cc.pMul(self._controller._map._mapLayer:pos(),-1) )
+		for obj,_ in pairs(self._objects) do
+			if obj:getType() == ItemType then
+				local box = obj:getBox()
+				if cc.rectContainsPoint(box,mapPos) then
+					self._controller:pickUpItem(obj)
+					item = obj
+					cclog("get item!!!!!!!!!!!!!!!!!!")
+					break
+				end
+			end
+		end
+		if item ~= nil then
+			GameLogic:removeItem(item:getGuid())
+		end
+	--end
+	--self:moveStick(pt)
 end
 
 function KeyBoardControl:drag(pt)

@@ -7,15 +7,22 @@ local __allowInstance = nil
 local HexData = require("utils.HexData")
 local gameState = require("utils.GameState")
 local storageName = ""
-local heroDataProxy = require("utils.manager.HeroDataProxy")
+
+local teamDataMgr = require("utils.manager.TeamDataMgr")
+local BagDataMgr = require("utils.manager.BagDataMgr")
 local stageDataMgr = require("utils.manager.StageDataMgr")
-local questDataProxy = require("utils.manager.QuestDataProxy")
+local questDataMgr = require("utils.manager.QuestDataMgr")
 local motionMgr = require("utils.manager.MotionMgr")
+local Player = require("utils.Player")
+local AchievementDataMgr = require("utils.manager.AchievementDataMgr")
+
+local psw = "U1b2e8r"
+local key = "the!one3"
 
 --[[
 多存档
---通用信息：
---英雄信息：钻石，金币，复活卷轴，装备，等级，经验，(属性：生命值,攻击，防御。。。)，
+--队伍信息：钻石，金币，复活卷轴，出战队列，未出战队列
+--英雄信息：装备，等级，经验，(属性：生命值,攻击，防御。。。)，
             已学技能
 
             英雄可能要满足某种条件(升级或者进化)才能学习新的技能LearnSpell()。
@@ -52,14 +59,20 @@ function StorageMgr:getInstance( )
 end
 
 function StorageMgr:Init()
-    self._heroDataProxy = heroDataProxy:getInstance()
-    self._heroDataProxy:setMgr(self)
+    self._teamDataMgr = teamDataMgr:getInstance()
+    self._teamDataMgr:setMgr(self)
+    self._bagDataMgr = BagDataMgr:getInstance()
+    self._bagDataMgr:setMgr(self)
     self._stageDataMgr = stageDataMgr:getInstance()
     self._stageDataMgr:setMgr(self)
-    self._questDataProxy = questDataProxy:getInstance()
-    self._questDataProxy:setMgr(self)
+    self._questDataMgr = questDataMgr:getInstance()
+    self._questDataMgr:setMgr(self)
     self._motionMgr = motionMgr:getInstance()
     self._motionMgr:setMgr(self)
+    self._achievementDataMgr = AchievementDataMgr:getInstance()
+    self._achievementDataMgr:setMgr(self)
+
+    self._players = {}
 end
 
 function StorageMgr:isStorageExist(index)
@@ -72,13 +85,61 @@ function StorageMgr:isStorageExist(index)
 end
 
 function StorageMgr:Reset()
-
+    self._teamDataMgr:Reset()
+    self._bagDataMgr:Reset()
+    self._stageDataMgr:Reset()
+    self._questDataMgr:Reset()
+    self._achievementDataMgr:Reset()
+    self._players = {}
 end
 
 function StorageMgr:Create(storageIndex)
     storageName = "storage_" .. storageIndex ..".dat"
     self:InitGameState()
+
+    --创建存档的同时，需要做的事情：
+    --赠予英雄，开启关卡,赠予背包格子,添加成就链,
+    cclog("创建初生英雄")
+    local player = self:CreatePlayer(1)
+    self._teamDataMgr:addBattleSeq(1,1)
+    self._bagDataMgr:modifyTotalSlots(48)
+    self._bagDataMgr:modifyOwnSlots(8)
+
+    
+    
+    self._stageDataMgr:addAllowableStage(1)
+
+    --添加1-1章节的成就
+    self._achievementDataMgr:addAchievement(1)
+    self._achievementDataMgr:addAchievement(2)
+    self._achievementDataMgr:addAchievement(3)
+
+    self._stageDataMgr:addAllowableStage(30)
+self._teamDataMgr:modifyCoin(500)
     self:Save()
+end
+
+function StorageMgr:CreatePlayer(id)
+    --要创建的player是否已经存在
+    for k,player in pairs(self._players) do
+        if player:getId() == id then
+            cclog("-------player already exist")
+            return
+        end
+    end
+
+    local player = Player.new()
+    player:Create(id)
+    self._players[id] = player
+    return player
+end
+
+function StorageMgr:addBattleSeq(player,index)
+    -- body
+end
+
+function StorageMgr:getBattleSeq()
+    
 end
 
 function StorageMgr:Delete(storageIndex)
@@ -96,21 +157,28 @@ end
 function StorageMgr:Save()
 	local data = self:getJsonData()
 	assert(data,"nil data")
+    dump(data,"Storage file content:",4)
 	gameState.save(data)
 end
 
 function StorageMgr:Load(storageIndex)
+    self:Reset()
+
     storageName = "storage_" .. storageIndex ..".dat"
     self:InitGameState()
 
 	local filename = gameState.getGameStatePath()
 	if cc.isFileExist(filename) then
 		local parseTable = gameState.load()
+        if not parseTable then return false end
+        dump(parseTable,"storage file content:",4)
 		self:Serialize(parseTable)
 	else
         cclog("不存在存档"..storageIndex)
 		self:Reset()
 	end
+
+    return true
 end
 
 function StorageMgr:InitGameState()
@@ -122,45 +190,65 @@ function StorageMgr:InitGameState()
         end
         local crypto = require("utils.crypto")
         if "load" == event.name then
-            local str = crypto.decryptXXTEA(event.values.data, "U1b2e8r")
-            returnValue = json.decode(str)
-            dump(returnValue, "gameData:")
+            local str = crypto.decryptXXTEA(event.values.data, psw)
+            local gameData = json.decode(str)
+            dump(gameData, "gameData:")
+            return gameData
         elseif "save" == event.name then
             local str = json.encode(event.values)
             if str then
-                str = crypto.encryptXXTEA(str, "U1b2e8r")
+                str = crypto.encryptXXTEA(str, psw)
                 returnValue = {data = str}
             else
                 print("ERROR, encode fail")
                 return
             end
-        end
 
-        return returnValue
+            return {data = str}
+        end
     end
 
-    gameState.init(stateListener, storageName, "keyHTL")
+    gameState.init(stateListener, storageName, key)
 end
 
 function StorageMgr:getJsonData()
 	local retData = {}
+	
+    retData["teamInfo"] = self._teamDataMgr:GetData()
+    retData["bagInfo"] = self._bagDataMgr:GetData()
+    retData["achievementsInfo"] = self._achievementDataMgr:GetData()
+    retData["stageInfo"] = self._stageDataMgr:GetData()
 
-	retData["name"] = self._heroDataProxy:getName()
-	retData["coin"] = self._heroDataProxy:getCoin()
-	retData["diamond"] = self._heroDataProxy:getDiamond()
-	retData["level"] = self._heroDataProxy:getLevel()
-	retData["exp"]	= self._heroDataProxy:getExp()
-    retData["questinfo"] = self._questDataProxy:GetAllQuests()
+    assert(#self._players > 0,"没有player的数据")
+    local playerCount = 1
+    for k,player in pairs(self._players) do
+        retData["player"..playerCount] = player:GetData()
+        playerCount = playerCount + 1
+    end
+    
 
 	return retData
 end
 
 function StorageMgr:Serialize(jsonValue)
+    
     cclog("----StorageMgr:Serialize")
-    self._heroDataProxy:Load(jsonValue)
-    self._stageDataMgr:Load(jsonValue)
-    self._questDataProxy:Load(jsonValue)
+    self._teamDataMgr:Load(jsonValue["teamInfo"])
+    self._bagDataMgr:Load(jsonValue["bagInfo"])
+    self._achievementDataMgr:Load(jsonValue["achievementsInfo"])
+    self._stageDataMgr:Load(jsonValue["stageInfo"])
+    self._questDataMgr:Load(jsonValue)
     self._motionMgr:Load(jsonValue)
+
+
+    for k,v in pairs(jsonValue) do
+        if string.find(k,"player") then
+            local player = require("utils.Player").new()
+            cclog("Load Player id:"..v.id)
+            player:Load(v)
+            self._players[v.id] = player
+        end
+    end
 
     --通用信息：钻石，金币，复活卷轴
     --英雄信息：装备，等级，经验，(属性：生命值,攻击，防御。。。)，已学技能，未学技能
@@ -174,23 +262,41 @@ function StorageMgr:Serialize(jsonValue)
 
     --主要功能：新手引导，人物升级，装备强化，穿卸装备，技能开启，技能升级，阵型调整，开启关卡，关卡掉落，
     --完成任务，完成成就，出售物品，购买商品
-    dump(jsonValue,"jsonValue:")
 end
 
-function StorageMgr:getHeroDataProxy()
-	--assert(self._heroDataProxy,"ERROR:Invaild singleton 'HeroDataProxy'")
-	return self._heroDataProxy or heroDataProxy:getInstance()
+function StorageMgr:getTeamDataMgr()
+	--assert(self._teamDataMgr,"ERROR:Invaild singleton 'HeroDataProxy'")
+	return self._teamDataMgr or teamDataMgr:getInstance()
 end
 
-function StorageMgr:getStageDataProxy()
-    return nil
+function StorageMgr:getStageDataMgr()
+    return self._stageDataMgr
 end
 
 function StorageMgr:getQuestDataProxy()
-	--assert(self._heroDataProxy,"ERROR:Invaild singleton 'HeroDataProxy'")
-	return self._questDataProxy or questDataProxy:getInstance()
+	--assert(self._teamDataMgr,"ERROR:Invaild singleton 'HeroDataProxy'")
+	return self._questDataMgr or questDataMgr:getInstance()
 end
 
+function StorageMgr:getBagDataMgr()
+    return self._bagDataMgr
+end
+
+function StorageMgr:getAchievementDataMgr()
+    return self._achievementDataMgr
+end
+
+function StorageMgr:getPlayer(id)
+    assert(self._players[id],"Invaild player id:"..id)
+    return self._players[id]
+end
+
+function StorageMgr:hasPlayer(id)
+    if self._players[id] then
+        return true
+    end
+    return false
+end
 
 --关卡类型：过关，竞技场，Boss，防守
 

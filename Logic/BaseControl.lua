@@ -40,14 +40,22 @@ function BaseControl:clear()
 end
 
 function BaseControl:addPlayer(player)
-	self._players[#self._players+1] = player
-	if #self._players == 1 then
+	self._players[player:getGuid()] = player
+	if not self._controller then
 		self._controller = player
 	end
 end
 
+function BaseControl:removePlayer(guid)
+	self._players[player:getGuid()] = nil
+end
+
 function BaseControl:addObject(object)
-	self._objects[#self._objects+1] = object 
+	self._objects[object] = true 
+end
+
+function BaseControl:removeObject(object)
+	self._objects[object] = nil
 end
 
 function BaseControl:OnFinishAddPlayers()
@@ -66,6 +74,10 @@ function BaseControl:drag(pt)
 end
 
 function BaseControl:refreshUI()
+end
+
+function BaseControl:getController()
+	return self._controller
 end
 
 return BaseControl

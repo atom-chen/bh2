@@ -11,7 +11,11 @@ verCode =
   text    = "1.0.0",
 }
 
-CCS_VER = 2.1
+if config.editor == false then
+  CCS_VER = 2.1
+else
+  CCS_VER = 1.6
+end
 
 -- 0 - disable debug info, 1 - less debug info, 2 - verbose debug info
 DEBUG = 1

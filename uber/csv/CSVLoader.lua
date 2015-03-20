@@ -43,12 +43,12 @@ function CSVLoader.load(entry)
     local fmtTable = {}
     local oneRecordSize = 0
     local indexpos = -1
+    local recordCount = #data
     for i=1,fmtLen do
     	fmtTable[i] = string.sub(entry.fmt,i,i)
     	if fmtTable[i] == "n" then
-    		indexpos = oneRecordSize
+    		indexpos = i
     	end
-    	oneRecordSize = oneRecordSize + CSVformat[fmtTable[i]].size
     end
     entry.fmt = nil 			-- 删除fmt字段
 
@@ -92,14 +92,16 @@ function CSVLoader.load(entry)
         return step
     end
 
-    for i = 1,#data do
+    for i = 2,recordCount do
         while true do
-            if i == 1 then break end
             local lineStr = string.trim(data[i])
             local tmp = string.split(lineStr, ",")
             if #tmp < 1 then break end
-            local id = tonumber(tmp[1])
-            if not id then break end
+            local id = i-1
+            if indexpos >= 0 then
+                id = tonumber(tmp[indexpos])
+                if not id then break end
+            end
             if not dbcStore[id] then dbcStore[id] = {} end
             if dbcStore[id] then
                 setValue(dbcStore[id],entry,tmp,0)

@@ -1,78 +1,37 @@
---[[
-local MapUI = class("MapUI",
-	function ()
-		return ccui.loadWidget("ui2/BattleView_1.csb")
-	end
-)
-
-function MapUI:ctor()
-	for i = 0,4 do
- 		self:getResourceNode():getChild("suiconghpkuang_"..i):setVisible(false)
- 		self:getResourceNode():getChild("img_monsterhead_"..i):setVisible(false)
- 	end
-
- 	self:autoscale()
-end
-
-function MapUI:autoscale()
-	for i = 1,self:getResourceNode():getChildrenCount() do
-        local child = self:getResourceNode():getChildren()[i]
-        if child:getName() ~= "Image_bg" then
-        	--display:ccp( child )
-        	child:pos(display.p(child:pos()))
-        else
-        	display:AutoScale(child)
-        end
-    end
-end]]
-
 local ViewBase = require("ui.ViewBase")
 local MapUI = class("MapUI", ViewBase)
 
-MapUI.RESOURCE_FILENAME = "ui2/BattleView1.csb"
+MapUI.RESOURCE_FILENAME = "ui/BattleView1.csb"
 MapUI.AUTOSCALE = true
 
 function MapUI:onCreate()
 	for i = 0,4 do
- 		self:getResourceNode():getChild("suiconghpkuang_"..i):setVisible(false)
- 		self:getResourceNode():getChild("img_monsterhead_"..i):setVisible(false)
+ 		self:getPanel():getChild("suiconghpkuang_"..i):setVisible(false)
+ 		self:getPanel():getChild("img_monsterhead_"..i):setVisible(false)
  	end
 
- 	--self:getResourceNode():reorderChild(self:getResourceNode():getChild("num_curexp2"),1000000)
-end
-
-function MapUI:AutoScale()
-	for i = 1,self:getResourceNode():getChildrenCount() do
-        local child = self:getResourceNode():getChildren()[i]
-        if child:getName() ~= "Image_bg" then
-        	--display:ccp( child )
-        	child:pos(display.p(child:pos()))
-        else
-        	display:AutoScale(child)
-        end
-    end
 end
 
 function MapUI:updateHp(hp,maxhp)
 	hp = hp or 0
 	maxhp = maxhp or 1
 	assert(maxhp ~= 0,"max hp should not be 0")
-	self:getResourceNode():getChild("num_curhp"):setString(tostring(hp))
-	self:getResourceNode():getChild("num_hp"):setString(tostring(maxhp))
-	self:getResourceNode():getChild("bar_hp"):setPercent(hp/maxhp * 100)
+	self:getPanel():getChild("num_curhp"):setString(tostring(hp))
+	self:getPanel():getChild("num_hp"):setString(tostring(maxhp))
+	self:getPanel():getChild("bar_hp"):setPercent(hp/maxhp * 100)
 end
 
 function MapUI:UpdateMoney( money)
-	self:getResourceNode():getChild("num_money"):setString(tostring(money))
+	self:getPanel():getChild("num_money"):setString(tostring(money))
 end
 
 function MapUI:UpdateScroll(scroll )
-	self:getResourceNode():getChild("num__juanzhuo"):setString(tostring(scroll))
+	self:getPanel():getChild("num__juanzhuo"):setString(tostring(scroll))
 end
 
 function MapUI:UpdateExp(exp,maxexp)
-	self:getResourceNode():getChild("num_curexp"):setString(tostring(curexp))
-	self:getResourceNode():getChild("num_exp"):setString(tostring(maxexp))
+	self:getPanel():getChild("num_curexp"):setString(tostring(curexp))
+	self:getPanel():getChild("num_exp"):setString(tostring(maxexp))
 end
 
 function MapUI:AddCombo(combo)

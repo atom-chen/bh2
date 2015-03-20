@@ -20,14 +20,14 @@ CharacterEditorScene = require("Editor.Character.ui.Main")
 
 function MyApp:ctor()
 	MyApp.super.ctor(self)
-    local scene = nil
+    
 	if config.editor then
-		--scene = cc.Scene:create()
+		local scene = cc.Scene:create()
 		scene = CharacterEditorScene.new()
 		--scene = require("Editor.ProjectCreator.ProjectCreateUI").new()
 		--local layer = require("mainLayer").new()
 		--scene:addChild(layer)
-		--cc.runScene(scene)
+		cc.runScene(scene)
 	else
 		--[[
 		StageManager:loadfromdbc()
@@ -36,7 +36,8 @@ function MyApp:ctor()
 		--GameLogic:addEvent(evt)
 		scene = cc.Scene:create()
 		scene:addChild(GameLogic._map)
-		cc.runScene(scene)]]
+		cc.runScene(scene)
+		--]]
 		UIMgr:EnterScene(GameState.STORAGE)
 	end
     --cc.runScene(scene)

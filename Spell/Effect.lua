@@ -8,7 +8,7 @@ local instant = 0
 local tagTigger = 1
 
 function Effect:ctor(spell,idx)
-	local effectInfo = SpellManager:getEffectEntry(idx)
+	local effectInfo = sSpellEffects[idx]
 	assert(effectInfo)
 	self._info = effectInfo
 	self._spell = spell

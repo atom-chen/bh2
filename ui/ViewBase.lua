@@ -1,10 +1,13 @@
 
-local ViewBase = class("ViewBase", cc.Node)
+local ViewBase = class("ViewBase", ccui.Layout)
 
 function ViewBase:ctor(app, name)
     --self:enableNodeEvents()
     self.app_ = app
     self.name_ = name
+
+    self:setSize(winSize)
+    self:setTouchEnabled(true)
 
     -- check CSB resource file
     local res = rawget(self.class, "RESOURCE_FILENAME")
@@ -24,6 +27,8 @@ function ViewBase:ctor(app, name)
     end
 
     if self.onCreate then self:onCreate() end
+
+    self:setNodeEventEnabled(true)
 end
 
 function ViewBase:getApp()
@@ -40,6 +45,11 @@ end
 
 function ViewBase:getPanel()
     return self.resourceNode_:getChild("Panel") or self.resourceNode_
+end
+
+function ViewBase:getChild(name)
+    local root = self:getPanel()
+    return ccui.Helper:seekWidgetByName(root,name)
 end
 
 function ViewBase:AutoScale()
@@ -89,7 +99,6 @@ function ViewBase:createResoueceBinding(binding)
         if nodeBinding.varname then
             self[nodeBinding.varname] = node
         end
-        dump(nodeBinding.events)
         for _, event in ipairs(nodeBinding.events or {}) do
             if event.event == "touch" then
                 --node:onTouch(handler(self, self[event.method]))

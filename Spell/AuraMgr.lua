@@ -1,17 +1,34 @@
---AuraMgr
-local Aura = require "Spell.Aura"
-
-AuraMgr = class("AuraMgr")
-AuraMgr.__index = AuraMgr
-
+AuraMod = 
+{
+	none = 0,
+	dummy = 1,			-- 哑效果
+	addattack = 2,		-- modify attack (基础伤害)
+	adddamage = 3,		-- modify damage (额外伤害)
+	addresist = 4,		-- modify 抵抗伤害
+	addresistratio = 5,	-- modify 
+	silence = 6,		-- 沉默
+	reduce_physic_resist = 7,	-- 降低物理抗性
+	absorbdamage = 8,		-- 吸收伤害
+	armor_penetration = 9,
+	tiggerSpell = 10,		-- 触发技能
+	impactTarget = 11,
+	max  = 12,
+}
 
 -- 触发型光环
 AuraTriggerType = 
 {
 	none = 0,
 	onhit = 1,
-	max = 2	
+	impact = 2,
+	max = 3,
 }
+
+--AuraMgr
+local Aura = require "Spell.Aura"
+
+AuraMgr = class("AuraMgr")
+AuraMgr.__index = AuraMgr
 
 function AuraMgr:ctor()
 	self._auraList = {}
@@ -53,17 +70,17 @@ function AuraMgr:hasAuraMod(mod)
 	end
 end
 
-function AuraMgr:addAura( caster,spellEffect )
+function AuraMgr:addAura( caster,spellEffect,displayId)
 	assert(caster)
 	assert(spellEffect)
-	local mod = spellEffect._info.aura[0].mod
-	local race = spellEffect._info.aura[0].race
+	local mod = spellEffect.aura[0].mod
+	local race = spellEffect.aura[0].race
 	-- 检查是否有重复光环
 	if self._auraRace[mod][race].base == 0 and
 	 self._auraRace[mod][race].pct == 0  then
 
 	 	-- 不存在RACE
-	 	local newaura = Aura.new(caster,spellEffect._info,spellEffect._spell._info.displayID)
+	 	local newaura = Aura.new(caster,spellEffect,displayId)
 		table.insert(self._auraList,newaura)
 		self:applyAura(newaura)
 
@@ -207,6 +224,15 @@ end
 -- 命中时触发
 function AuraMgr:triggerOnHit()
 	local l = self._triggerList[AuraTriggerType.onhit]
+	if l then
+		for k,v in pairs(l) do
+			k:onTrigger()
+		end
+	end
+end
+
+function AuraMgr:triggerImpact()
+	local l = self._triggerList[AuraTriggerType.impact]
 	if l then
 		for k,v in pairs(l) do
 			k:onTrigger()
